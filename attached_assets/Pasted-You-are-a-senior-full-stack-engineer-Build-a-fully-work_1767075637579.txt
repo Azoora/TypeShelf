@@ -1,0 +1,308 @@
+You are a senior full-stack engineer. Build a fully working self-hosted Font Manager web app similar to fontba.se, designed for Docker + Umbrel. Use Node.js for backend, React for frontend. Implement real folder scanning + real-time watching, metadata extraction, search/filters, duplicates handling, downloads, and “Collections/Projects” (shortlists).
+
+========================
+PRODUCT OVERVIEW
+========================
+App name: TypeShelf
+Purpose: self-hosted local font library browser with Categories (folder paths) + Favorites + Collections/Projects. Fonts are stored in host folders mounted into the container. Each Category maps to a real folder path. Collections are virtual lists for design projects.
+
+Must have:
+- Modern UI (dark + light), minimal but premium
+- Folder-backed Categories in left sidebar
+- Collections section below Favorites and above Categories, with + to create
+- Search + filters (name, weight/style, italic, file type) and Favorites
+- Auto-scan on startup + real-time folder watching (inotify via chokidar)
+- Duplicates detection across folders (hash-based + metadata)
+- Font detail studio view (preview controls + glyphs + code snippets + files)
+- Download font files
+- Provide code snippets for Web CSS @font-face, React/Next.js, Flutter, iOS, Android
+- High performance for 500–5000 fonts
+
+No login required (local server), but support optional HTTP Basic Auth via env var.
+
+========================
+TECH STACK (REQUIRED)
+========================
+Backend:
+- Node.js + Fastify (preferred) OR NestJS (acceptable)
+- chokidar for filesystem watch
+- fontkit for metadata extraction (preferred)
+- SQLite database
+- Prisma ORM (preferred) OR Drizzle
+- Use SQLite FTS5 for fast search (preferred)
+
+Frontend:
+- React + Vite
+- Tailwind CSS (or similar)
+- React Router
+- UI must match TypeShelf design style (premium type tool)
+- Use API-driven pagination
+
+Docker/Umbrel:
+- Provide Dockerfile(s) + docker-compose.yml
+- Single exposed HTTP port (e.g., 3000) serving frontend + API (proxy or same server)
+- Persistent volume for database/config
+- Mounted fonts root folder(s) into container (e.g., /fonts)
+
+========================
+DATA MODEL (MUST IMPLEMENT)
+========================
+Use SQLite + Prisma schema with tables:
+
+Category:
+- id (uuid)
+- name (display name)
+- path (absolute path inside container, e.g., /fonts/Serif)
+- createdAt, updatedAt
+- status (ok/missing) + lastError (optional)
+
+Collection:
+- id (uuid)
+- name
+- description (optional)
+- color (optional string)
+- createdAt, updatedAt
+
+FontFile:
+- id (uuid)
+- categoryId (FK)
+- fullPath (absolute)
+- relPath (relative under category path)
+- filename
+- ext (otf/ttf/ttc/woff/woff2)
+- sizeBytes
+- mtimeMs
+- sha1 (or xxhash) content hash
+- urlKey (stable key for /fonts-static)
+- duplicateGroupKey (nullable)
+- createdAt, updatedAt
+
+FontFace (a style/variant):
+- id (uuid)
+- fontFileId (FK)
+- family
+- subfamily/styleName
+- postscriptName
+- weight (number, nullable)
+- italic (boolean)
+- stretch (nullable)
+- version (nullable)
+- fullName (nullable)
+
+Family (optional, but helpful):
+- id (uuid)
+- familyName
+- primaryFontFaceId (nullable)
+- createdAt, updatedAt
+
+Favorite:
+- id (uuid)
+- targetType (enum: family|face|file)
+- targetId
+- createdAt
+
+CollectionItem:
+- id (uuid)
+- collectionId (FK)
+- targetType (family|face|file)  (choose one consistent: preferably family)
+- targetId
+- createdAt
+
+Use FTS5:
+- searchable fields: family, styleName, filename, postscriptName
+
+========================
+CORE BEHAVIOR
+========================
+1) Categories (Folder-backed)
+- API to CRUD categories.
+- Adding a category stores path + display name.
+- App must scan category path recursively for fonts.
+- If category path missing/unmounted: mark status=missing and show warning; do NOT delete.
+- Provide manual "retry/rescan category" endpoint.
+
+2) Scanning + Watching
+- On server startup: scan all categories (in background queue).
+- Use chokidar watch per category path; update index on add/change/unlink.
+- Debounce scanning; parse only changed files.
+- Keep scan fast: avoid reading full file unless needed (hash required for duplicates).
+- Store scan progress + lastScanAt in DB or memory.
+
+3) Metadata extraction
+- For each font file, extract:
+  family, style/subfamily, weight, italic, postscriptName, version, fullName
+- fontkit supports many formats; for woff/woff2 also parse.
+- Handle errors gracefully; mark file as invalid with lastError field if needed.
+
+4) Duplicates detection
+- Duplicate by content hash primarily.
+- If same hash appears in multiple categories: group into duplicateGroupKey.
+- UI should show single family but list all locations in detail view.
+- If same family name but different hash: treat as separate (conflict) and label.
+
+5) Static serving for previews + snippets
+- Backend should serve font binaries at:
+  GET /fonts-static/:urlKey/:filename
+- urlKey should be stable (e.g., first 12 chars of hash).
+- Only serve files that exist in DB (no arbitrary path serving).
+
+6) Collections/Projects
+- CRUD collections (name, description, color).
+- Add/remove fonts to collections:
+  - endpoint to toggle membership
+  - allow multiple collections per font
+- Implement:
+  - list collections with counts
+  - list fonts in a collection
+- Optional later: drag/drop in UI; for now implement API and UI affordances.
+
+7) Favorites
+- Toggle favorite on a family (preferred).
+- Favorites page filter.
+
+8) Search + Filters
+- Search query across family/style/filename using FTS5.
+- Filters:
+  - file type
+  - weight range
+  - italic
+  - category
+  - favorites only
+  - collectionId
+- Sorting: Name A–Z, Recently Added (by createdAt/mtime)
+
+9) Font Detail (Studio)
+- API endpoint returns:
+  - family overview
+  - all faces/variants
+  - locations/categories
+  - duplicate locations
+  - downloadable files
+  - collections membership
+  - code snippets content
+
+10) Code Snippets generator
+- Generate snippets using actual served URLs under /fonts-static.
+Provide blocks for:
+A) Web CSS @font-face (one per weight/style)
+B) React/Next.js usage
+C) Flutter pubspec.yaml + TextStyle usage
+D) iOS steps + usage note
+E) Android steps (res/font or assets) + Compose/XML usage
+Include copy buttons in UI.
+
+11) Optional Basic Auth
+- If ENABLE_BASIC_AUTH=true:
+  - enforce Basic Auth for all routes
+  - credentials from BASIC_AUTH_USER / BASIC_AUTH_PASS
+
+========================
+API ROUTES (MUST IMPLEMENT)
+========================
+Categories:
+- GET /api/categories
+- POST /api/categories {name, path}
+- PUT /api/categories/:id {name, path}
+- DELETE /api/categories/:id
+- POST /api/categories/:id/rescan
+- GET /api/health (include scan state)
+
+Collections:
+- GET /api/collections
+- POST /api/collections {name, description?, color?}
+- PUT /api/collections/:id
+- DELETE /api/collections/:id
+- GET /api/collections/:id/fonts (paginated)
+
+Favorites:
+- GET /api/favorites
+- POST /api/favorites/toggle {targetType, targetId}
+
+Fonts:
+- GET /api/fonts (query params: q, categoryId, collectionId, favorites, types, italic, weightMin, weightMax, sort, page, pageSize)
+- GET /api/fonts/:id (family or file/face; choose consistent ID strategy)
+- GET /api/fonts/:id/download (download original)
+- GET /api/fonts/:id/snippets (returns snippet blocks)
+- POST /api/rescan (rescan all categories)
+
+Serving:
+- GET /fonts-static/:urlKey/:filename
+
+========================
+FRONTEND UI (MUST IMPLEMENT)
+========================
+Implement the UI from the TypeShelf design:
+
+Sidebar:
+- All Fonts
+- Favorites
+- Collections (with + create)
+- Categories (with + add folder)
+- Theme toggle
+
+Top bar:
+- Search
+- Preview text button (popover)
+- Size slider
+- Filters panel
+- Rescan button
+
+Main:
+- Font gallery cards with preview text
+- Favorite toggle
+- Quick “Add to Collection” action (popover checklist)
+- Collection/category views
+
+Font Studio page:
+- Preview text + size + line height
+- Waterfall by styles
+- Right panel tabs: Info, Glyphs, Code, Files
+- Collections block in Info (chips + add/remove)
+- Code tab shows snippet blocks with Copy buttons
+- Files tab with Download buttons and locations
+
+Use clean loading skeletons and empty states.
+
+========================
+DOCKER + UMBREL DELIVERABLES
+========================
+Provide:
+- Dockerfile(s)
+- docker-compose.yml that runs the app
+- volume for SQLite DB + config
+- example of mounting fonts root:
+  - ./fonts:/fonts
+- README with Umbrel custom app notes:
+  - Expose one port
+  - How to mount multiple directories (or recommend one /fonts root with subfolders)
+  - How to add categories in UI
+
+========================
+QUALITY / ACCEPTANCE TESTS
+========================
+Must work end-to-end:
+- Add category pointing to /fonts/Serif -> appears in sidebar
+- Drop new font file into mounted folder -> appears in UI within seconds (watcher)
+- Restart containers -> scan rebuilds and shows new fonts
+- Search and filters fast with 1000+ fonts
+- Add font to Collection and view collection list
+- Favorites work
+- Download works
+- Snippets use correct served URLs
+- Missing folder shows warning but app still works
+
+========================
+OUTPUT
+========================
+Generate the full repository with:
+- /server (Fastify + Prisma)
+- /web (React + Vite)
+- root docker-compose.yml
+- README.md
+- prisma schema + migration instructions
+Include commands:
+- npm install
+- prisma migrate
+- docker compose up
+
+If any choices must be made, prefer simplicity and reliability. Build it.
