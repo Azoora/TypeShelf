@@ -10,22 +10,22 @@
   --font-mono: 'JetBrains Mono', monospace;
 
   /* HSL Colors - Space separated */
-  --background: 0 0% 10%; /* Dark Background #1a1a1a */
+  --background: 0 0% 0%; /* Pure Black for OLED */
   --foreground: 0 0% 98%;
 
-  --card: 0 0% 13%;
+  --card: 0 0% 5%; /* Slightly elevated from pure black */
   --card-foreground: 0 0% 98%;
 
-  --popover: 0 0% 13%;
+  --popover: 0 0% 5%;
   --popover-foreground: 0 0% 98%;
 
   --primary: 262 83% 58%; /* Purple Accent */
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 0 0% 18%;
+  --secondary: 0 0% 10%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 0 0% 18%;
+  --muted: 0 0% 10%;
   --muted-foreground: 0 0% 60%;
 
   --accent: 262 83% 58%;
@@ -34,8 +34,8 @@
   --destructive: 0 62% 30%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
+  --border: 0 0% 12%;
+  --input: 0 0% 12%;
   --ring: 262 83% 58%;
 
   --radius: 0.75rem;

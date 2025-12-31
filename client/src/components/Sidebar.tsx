@@ -6,7 +6,7 @@ import {
   LayoutGrid, 
   FolderOpen, 
   Plus, 
-  Settings,
+  Settings as SettingsIcon,
   Library,
   Trash2
 } from "lucide-react";
@@ -89,6 +89,7 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border mt-auto">
+        <NavItem href="/settings" icon={<SettingsIcon />} label="Settings" active={location === "/settings"} />
       </div>
     </aside>
   );
