@@ -5,5 +5,12 @@
     "collectionId": "97f8283a-b86f-485b-9c34-ef51aea1c358",
     "id": "d999f531-b9f6-4bf5-911e-8a3866f94359",
     "createdAt": "2025-12-31T14:32:30.262Z"
+  },
+  {
+    "targetType": "family",
+    "targetId": "Inter Variable",
+    "collectionId": "fc2484d9-2efb-47a1-8bae-7229d685364b",
+    "id": "79625ec2-4269-48bd-9b37-cbd886ed8041",
+    "createdAt": "2025-12-31T14:47:54.274Z"
   }
 ]

@@ -1,12 +1,13 @@
 import { Sidebar } from "@/components/Sidebar";
 import { FontCard } from "@/components/FontCard";
 import { useFonts, useRescanFonts } from "@/hooks/use-fonts";
-import { useCollections } from "@/hooks/use-collections";
+import { useCollections, useRemoveFontFromCollection } from "@/hooks/use-collections";
 import { Search, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Popover, 
   PopoverContent, 
@@ -20,26 +21,36 @@ export default function Home() {
   const [previewText, setPreviewText] = useState("The quick brown fox jumps over the lazy dog");
   const [location] = useLocation();
   const [previewSize, setPreviewSize] = useState(32);
-  
-  // Parse filters from location or props could be better, but simple logic for now
-  // / -> all
-  // /favorites -> favorites=true
-  // /categories/:id -> categoryId=id
-  // /collections/:id -> collectionId=id
+  const { toast } = useToast();
   
   const isFavorites = location === "/favorites";
   const categoryMatch = location.match(/\/categories\/([^\/]+)/);
   const collectionMatch = location.match(/\/collections\/([^\/]+)/);
+  const collectionId = collectionMatch ? collectionMatch[1] : undefined;
   
   const filters = {
     q: search,
     favorites: isFavorites ? "true" : undefined,
     categoryId: categoryMatch ? categoryMatch[1] : undefined,
-    collectionId: collectionMatch ? collectionMatch[1] : undefined,
+    collectionId,
   };
 
   const { data, isLoading } = useFonts(filters);
   const { mutate: rescan, isPending: isRescanPending } = useRescanFonts();
+  const { mutate: removeFromCollection } = useRemoveFontFromCollection();
+
+  const handleRemoveFromCollection = (family: string) => {
+    if (!collectionId) return;
+    removeFromCollection({ 
+      collectionId, 
+      targetType: "family", 
+      targetId: family 
+    }, {
+      onSuccess: () => {
+        toast({ title: `Removed ${family} from collection` });
+      }
+    });
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -119,14 +130,8 @@ export default function Home() {
                       family={item.family}
                       faces={item.faces}
                       previewText={previewText}
-                      // In a real app we'd need to check favorite status from a proper user object or enhanced API response
-                      // For now, assume if we are in Favorites view, they are favorites. 
-                      // Or rely on a separate favorites list query if we want global state.
-                      // Let's rely on the card logic or pass it if available.
-                      // The API response for `list` doesn't currently return `isFavorite` flag on the item directly unless we modify backend.
-                      // Assuming the backend has been updated or we will fetch it.
-                      // Actually, let's just assume false for now unless we are in favorites view
-                      isFavorite={isFavorites} 
+                      isFavorite={item.isFavorite || isFavorites} 
+                      onDeleteFromCollection={collectionId ? () => handleRemoveFromCollection(item.family) : undefined}
                     />
                   ))}
                 </div>

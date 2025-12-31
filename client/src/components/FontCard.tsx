@@ -20,7 +20,7 @@ interface FontCardProps {
   isFavorite?: boolean;
 }
 
-export function FontCard({ family, faces, previewText = "The quick brown fox", isFavorite }: FontCardProps) {
+export function FontCard({ family, faces, previewText = "The quick brown fox", isFavorite, onDeleteFromCollection }: FontCardProps & { onDeleteFromCollection?: () => void }) {
   const { mutate: toggleFavorite } = useToggleFavorite();
   const { data: collections } = useCollections();
   const { mutate: addToCollection } = useAddFontToCollection();
@@ -31,13 +31,11 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
     return faces.find(f => f.subfamily === "Regular") || faces[0];
   }, [faces]);
 
-  // Generate CSS @font-face for this card
-  // We use the file's urlKey and filename to construct the static URL
+  // Use a unique ID based on the family and subfamily to avoid collision
+  const fontStyleId = useMemo(() => `font-${family.replace(/\s+/g, '-').toLowerCase()}-${previewFace.id}`, [family, previewFace.id]);
   const fontUrl = `/fonts-static/${previewFace.file.urlKey}/${previewFace.file.filename}`;
-  const fontStyleId = `font-${previewFace.id}`;
 
   useEffect(() => {
-    // Inject style for this font preview
     const style = document.createElement('style');
     style.innerHTML = `
       @font-face {
@@ -80,6 +78,37 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
       ">
         {/* Actions overlay - Top Right */}
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+          {onDeleteFromCollection ? (
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteFromCollection(); }}
+              className="p-2 rounded-lg bg-black/40 text-white/70 hover:bg-destructive hover:text-white backdrop-blur-md transition-colors"
+              title="Remove from collection"
+            >
+              <Plus className="w-4 h-4 rotate-45" />
+            </button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  className="p-2 rounded-lg bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {collections?.map(col => (
+                  <DropdownMenuItem key={col.id} onClick={(e) => handleAddToCollection(col.id, e as any)}>
+                    Add to {col.name}
+                  </DropdownMenuItem>
+                ))}
+                {(!collections || collections.length === 0) && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">No collections</div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <button 
             onClick={handleToggleFavorite}
             className={cn(
@@ -91,27 +120,6 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                className="p-2 rounded-lg bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {collections?.map(col => (
-                <DropdownMenuItem key={col.id} onClick={(e) => handleAddToCollection(col.id, e as any)}>
-                  Add to {col.name}
-                </DropdownMenuItem>
-              ))}
-              {(!collections || collections.length === 0) && (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No collections</div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Favorite indicator always visible if favorite */}

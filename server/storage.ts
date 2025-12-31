@@ -95,7 +95,14 @@ export class JsonStorage implements IStorage {
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const created: Category = { ...category, id: crypto.randomUUID(), createdAt: new Date(), updatedAt: new Date() };
+    const created: Category = { 
+      ...category, 
+      id: crypto.randomUUID(), 
+      status: category.status || "ok",
+      lastError: category.lastError || null,
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
     this.categories.push(created);
     this.save();
     return created;
@@ -128,7 +135,14 @@ export class JsonStorage implements IStorage {
   }
 
   async createCollection(collection: InsertCollection): Promise<Collection> {
-    const created: Collection = { ...collection, id: crypto.randomUUID(), createdAt: new Date(), updatedAt: new Date() };
+    const created: Collection = { 
+      ...collection, 
+      id: crypto.randomUUID(), 
+      description: collection.description || null,
+      color: collection.color || null,
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
     this.collections.push(created);
     this.save();
     return created;
@@ -160,7 +174,12 @@ export class JsonStorage implements IStorage {
       i.targetId === item.targetId
     );
     if (existing) return existing;
-    const created: CollectionItem = { ...item, id: crypto.randomUUID(), createdAt: new Date() };
+    const created: CollectionItem = { 
+      ...item, 
+      id: crypto.randomUUID(), 
+      collectionId: item.collectionId || null,
+      createdAt: new Date() 
+    };
     this.collectionItems.push(created);
     this.save();
     return created;
@@ -176,7 +195,11 @@ export class JsonStorage implements IStorage {
   async getCollectionFonts(collectionId: string, limit: number, offset: number): Promise<{ items: string[], total: number }> {
     const items = this.collectionItems
       .filter(i => i.collectionId === collectionId)
-      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as any).getTime();
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as any).getTime();
+        return dateB - dateA;
+      });
     return {
       items: items.slice(offset, offset + limit).map(i => i.targetId),
       total: items.length
@@ -185,7 +208,11 @@ export class JsonStorage implements IStorage {
 
   // Favorites
   async getFavorites(): Promise<Favorite[]> {
-    return [...this.favorites].sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+    return [...this.favorites].sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as any).getTime();
+      const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as any).getTime();
+      return dateB - dateA;
+    });
   }
 
   async toggleFavorite(favorite: InsertFavorite): Promise<{ favorite?: Favorite, isFavorite: boolean }> {
@@ -206,7 +233,13 @@ export class JsonStorage implements IStorage {
 
   // Fonts
   async createFontFile(file: InsertFontFile): Promise<FontFile> {
-    const created: FontFile = { ...file, id: crypto.randomUUID(), createdAt: new Date(), updatedAt: new Date() };
+    const created: FontFile = { 
+      ...file, 
+      id: crypto.randomUUID(), 
+      categoryId: file.categoryId || null,
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
     this.fontFiles.push(created);
     this.save();
     return created;
@@ -221,7 +254,18 @@ export class JsonStorage implements IStorage {
   }
 
   async createFontFace(face: InsertFontFace): Promise<FontFace> {
-    const created: FontFace = { ...face, id: crypto.randomUUID(), createdAt: new Date() };
+    const created: FontFace = { 
+      ...face, 
+      id: crypto.randomUUID(), 
+      fontFileId: face.fontFileId || null,
+      postscriptName: face.postscriptName || null,
+      weight: face.weight || null,
+      italic: face.italic || false,
+      stretch: face.stretch || null,
+      version: face.version || null,
+      fullName: face.fullName || null,
+      createdAt: new Date() 
+    };
     this.fontFaces.push(created);
     this.save();
     return created;
@@ -257,8 +301,10 @@ export class JsonStorage implements IStorage {
       results = results.filter(r => r.file.categoryId === params.categoryId);
     }
 
+    const favs = this.favorites.filter(f => f.targetType === 'family');
+    const favFamilies = new Set(favs.map(f => f.targetId));
+
     if (params.favorites) {
-      const favFamilies = new Set(this.favorites.filter(f => f.targetType === 'family').map(f => f.targetId));
       results = results.filter(r => favFamilies.has(r.face.family));
     }
 
@@ -273,7 +319,11 @@ export class JsonStorage implements IStorage {
       grouped.get(face.family)!.push({ ...face, file });
     }
 
-    let families = Array.from(grouped.entries()).map(([family, faces]) => ({ family, faces }));
+    let families = Array.from(grouped.entries()).map(([family, faces]) => ({ 
+      family, 
+      faces,
+      isFavorite: favFamilies.has(family)
+    }));
     
     if (params.sort === 'name_asc') {
       families.sort((a, b) => a.family.localeCompare(b.family));

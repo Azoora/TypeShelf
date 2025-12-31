@@ -121,5 +121,7 @@ export type CollectionItem = typeof collectionItems.$inferSelect;
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertCollection = z.infer<typeof insertCollectionSchema>;
+export type InsertFontFile = z.infer<typeof insertFontFileSchema>;
+export type InsertFontFace = z.infer<typeof insertFontFaceSchema>;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type InsertCollectionItem = z.infer<typeof insertCollectionItemSchema>;

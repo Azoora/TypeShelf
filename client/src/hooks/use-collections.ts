@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertCollection, type InsertCollectionItem } from "@shared/routes";
+import { api, buildUrl, type InsertCollection, type InsertCollectionItem } from "@shared/schema";
 
 // GET /api/collections
 export function useCollections() {
