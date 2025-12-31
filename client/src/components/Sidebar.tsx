@@ -36,32 +36,32 @@ export function Sidebar() {
         <div className="space-y-1">
           <NavItem href="/" icon={<Type />} label="All Fonts" active={location === "/"} />
           <NavItem href="/favorites" icon={<Heart />} label="Favorites" active={location === "/favorites"} />
-        </div>
+      </div>
 
-        {/* Collections */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between px-3">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Collections</h3>
-            <CreateCollectionDialog />
-          </div>
-          <div className="space-y-0.5">
-            {collections?.map((col) => (
-              <NavItem 
-                key={col.id}
-                href={`/collections/${col.id}`}
-                icon={<LayoutGrid className="w-4 h-4" />}
-                label={col.name}
-                active={location === `/collections/${col.id}`}
-                count={col.count}
-                onDelete={col.id}
-                deleteType="collection"
-              />
-            ))}
-            {(!collections || collections.length === 0) && (
-              <p className="text-xs text-muted-foreground px-3 py-2 italic">No collections yet</p>
-            )}
-          </div>
+      {/* Collections */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Collections</h3>
+          <CreateCollectionDialog />
         </div>
+        <div className="space-y-0.5">
+          {collections?.map((col) => (
+            <NavItem 
+              key={col.id}
+              href={`/collections/${col.id}`}
+              icon={<LayoutGrid className="w-4 h-4" />}
+              label={col.name}
+              active={location === `/collections/${col.id}`}
+              count={col.count}
+              onDelete={col.id}
+              deleteType="collection"
+            />
+          ))}
+          {(!collections || collections.length === 0) && (
+            <p className="text-xs text-muted-foreground px-3 py-2 italic">No collections yet</p>
+          )}
+        </div>
+      </div>
 
         {/* Categories (Folders) */}
         <div className="space-y-2">
@@ -89,7 +89,6 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border mt-auto">
-        <NavItem href="/settings" icon={<Settings />} label="Settings" active={location === "/settings"} />
       </div>
     </aside>
   );
@@ -136,7 +135,7 @@ function NavItem({
   return (
     <div className="group relative flex items-center">
       <Link href={href} className={cn(
-        "flex items-center w-full gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+        "flex items-center w-full gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 pr-10",
         active 
           ? "bg-primary/10 text-primary" 
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -147,14 +146,14 @@ function NavItem({
         </div>
         <span className="truncate flex-1">{label}</span>
         {count !== undefined && (
-          <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded text-muted-foreground">{count}</span>
+          <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded text-muted-foreground ml-auto">{count}</span>
         )}
       </Link>
       
       {onDelete && (
         <button
           onClick={handleDelete}
-          className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-all"
+          className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:text-destructive transition-all z-10 bg-card rounded-md shadow-sm"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
