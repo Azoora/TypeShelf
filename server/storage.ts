@@ -279,8 +279,14 @@ export class JsonStorage implements IStorage {
       families.sort((a, b) => a.family.localeCompare(b.family));
     } else {
       families.sort((a, b) => {
-        const dateA = Math.max(...a.faces.map(f => f.createdAt?.getTime() || 0));
-        const dateB = Math.max(...b.faces.map(f => f.createdAt?.getTime() || 0));
+        const dateA = Math.max(...a.faces.map(f => {
+          const d = f.createdAt;
+          return d instanceof Date ? d.getTime() : new Date(d as any).getTime() || 0;
+        }));
+        const dateB = Math.max(...b.faces.map(f => {
+          const d = f.createdAt;
+          return d instanceof Date ? d.getTime() : new Date(d as any).getTime() || 0;
+        }));
         return dateB - dateA;
       });
     }
