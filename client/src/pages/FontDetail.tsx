@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 import { useCollections, useAddFontToCollection } from "@/hooks/use-collections";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { type FontFace, type FontFile } from "@shared/schema";
+
+type FontFaceWithFile = FontFace & { file: FontFile };
 
 export default function FontDetail() {
   const [, params] = useRoute("/fonts/:family");
@@ -46,7 +49,7 @@ export default function FontDetail() {
     const style = document.createElement('style');
     let css = '';
     
-    font.faces.forEach(face => {
+    font.faces.forEach((face: FontFaceWithFile) => {
       const url = `/fonts-static/${face.file.urlKey}/${face.file.filename}`;
       css += `
         @font-face {
@@ -156,7 +159,7 @@ export default function FontDetail() {
             </div>
 
             <div className="space-y-16 py-8">
-              {font.faces.map(face => (
+              {font.faces.map((face: FontFaceWithFile) => (
                 <div key={face.id} className="space-y-4 group">
                   <div className="flex items-center justify-between text-xs text-muted-foreground/60">
                     <span className="font-medium uppercase tracking-widest">{face.subfamily}</span>
@@ -235,7 +238,7 @@ export default function FontDetail() {
             <TabsContent value="download" className="mt-0 space-y-4">
               <h3 className="text-sm font-semibold mb-4">Font Files</h3>
               <div className="space-y-2">
-                {font.faces.map(face => (
+                {font.faces.map((face: FontFaceWithFile) => (
                   <div key={face.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/10 group hover:bg-secondary/20 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{face.subfamily}</span>

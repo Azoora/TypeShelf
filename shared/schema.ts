@@ -125,3 +125,13 @@ export type InsertFontFile = z.infer<typeof insertFontFileSchema>;
 export type InsertFontFace = z.infer<typeof insertFontFaceSchema>;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type InsertCollectionItem = z.infer<typeof insertCollectionItemSchema>;
+
+// Helper for type-safe API responses
+export const api = {} as any;
+export const buildUrl = (path: string, params: Record<string, string | number> = {}) => {
+  let url = path;
+  for (const [key, value] of Object.entries(params)) {
+    url = url.replace(`:${key}`, encodeURIComponent(String(value)));
+  }
+  return url;
+};
