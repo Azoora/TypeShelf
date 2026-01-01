@@ -157,7 +157,12 @@ export class JsonStorage implements IStorage {
   }
 
   async deleteCollection(id: string): Promise<void> {
+    console.log(`Deleting collection: ${id}`);
+    const originalLength = this.collections.length;
     this.collections = this.collections.filter(c => c.id !== id);
+    
+    console.log(`Collections length before: ${originalLength}, after: ${this.collections.length}`);
+
     // Explicitly delete all items associated with this collection
     this.collectionItems = this.collectionItems.filter(i => i.collectionId !== id);
     this.save();

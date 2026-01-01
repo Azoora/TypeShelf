@@ -124,11 +124,17 @@ function NavItem({
 
     if (confirm("Are you sure you want to delete this?")) {
       if (deleteType === "collection") {
-        deleteCollection(onDelete);
-        toast({ title: "Collection deleted" });
+        deleteCollection(onDelete, {
+          onSuccess: () => {
+            toast({ title: "Collection deleted" });
+          }
+        });
       } else if (deleteType === "category") {
-        deleteCategory(onDelete);
-        toast({ title: "Folder removed" });
+        deleteCategory(onDelete, {
+          onSuccess: () => {
+            toast({ title: "Folder removed" });
+          }
+        });
       }
     }
   };

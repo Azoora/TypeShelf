@@ -28,7 +28,8 @@ export function useDeleteCollection() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/collections/${id}`);
+      const res = await apiRequest("DELETE", `/api/collections/${id}`);
+      if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/collections"] });

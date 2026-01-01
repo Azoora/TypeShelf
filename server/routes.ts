@@ -49,6 +49,11 @@ export async function registerRoutes(
     res.status(201).json(col);
   });
   
+  app.delete("/api/collections/:id", async (req, res) => {
+    await storage.deleteCollection(req.params.id);
+    res.status(204).send();
+  });
+
   app.get("/api/collections/:id/fonts", async (req, res) => {
     const { page, pageSize } = req.query as any;
     const result = await storage.getCollectionFonts(req.params.id, Number(pageSize || 50), (Number(page || 1) - 1) * Number(pageSize || 50));
