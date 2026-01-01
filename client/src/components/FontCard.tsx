@@ -54,6 +54,8 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
     toggleFavorite({ targetType: "family", targetId: family });
   };
 
+  const [open, setOpen] = useState(false);
+  
   const handleAddToCollection = (collectionId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -64,6 +66,7 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
     }, {
       onSuccess: () => {
         toast({ title: `Added ${family} to collection` });
+        setOpen(false);
       }
     });
   };
@@ -87,7 +90,7 @@ export function FontCard({ family, faces, previewText = "The quick brown fox", i
               <Plus className="w-4 h-4 rotate-45" />
             </button>
           ) : (
-            <DropdownMenu>
+            <DropdownMenu open={open} onOpenChange={setOpen}>
               <DropdownMenuTrigger asChild>
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}

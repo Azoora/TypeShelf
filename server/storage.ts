@@ -158,6 +158,7 @@ export class JsonStorage implements IStorage {
 
   async deleteCollection(id: string): Promise<void> {
     this.collections = this.collections.filter(c => c.id !== id);
+    // Explicitly delete all items associated with this collection
     this.collectionItems = this.collectionItems.filter(i => i.collectionId !== id);
     this.save();
   }
@@ -237,6 +238,7 @@ export class JsonStorage implements IStorage {
       ...file, 
       id: crypto.randomUUID(), 
       categoryId: file.categoryId || null,
+      duplicateGroupKey: file.duplicateGroupKey || null,
       createdAt: new Date(), 
       updatedAt: new Date() 
     };

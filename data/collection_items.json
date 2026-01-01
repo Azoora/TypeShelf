@@ -1,16 +1,23 @@
 [
   {
+    "collectionId": "fc2484d9-2efb-47a1-8bae-7229d685364b",
     "targetType": "family",
     "targetId": "Inter Variable",
-    "collectionId": "97f8283a-b86f-485b-9c34-ef51aea1c358",
-    "id": "d999f531-b9f6-4bf5-911e-8a3866f94359",
-    "createdAt": "2025-12-31T14:32:30.262Z"
+    "id": "886ef006-351d-4ac4-a344-40cec8804e45",
+    "createdAt": "2026-01-01T06:55:58.814Z"
   },
   {
-    "targetType": "family",
-    "targetId": "Inter Variable",
     "collectionId": "fc2484d9-2efb-47a1-8bae-7229d685364b",
-    "id": "79625ec2-4269-48bd-9b37-cbd886ed8041",
-    "createdAt": "2025-12-31T14:47:54.274Z"
+    "targetType": "family",
+    "targetId": "Inter Display SemiBold",
+    "id": "06ad4c7a-2a6e-4a7f-8d26-c54576011c6b",
+    "createdAt": "2026-01-01T06:57:23.393Z"
+  },
+  {
+    "collectionId": "97f8283a-b86f-485b-9c34-ef51aea1c358",
+    "targetType": "family",
+    "targetId": "Inter Display SemiBold",
+    "id": "6ef109e8-92b4-4f03-a97a-1b0c06b12a5e",
+    "createdAt": "2026-01-01T06:59:33.677Z"
   }
 ]
