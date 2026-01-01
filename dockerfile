@@ -30,8 +30,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/fonts ./fonts
 
-# Drizzle config & schema (required for migrations)
-COPY --from=build /app/drizzle.config.json ./drizzle.config.json
+# Drizzle config (TypeScript)
+COPY --from=build /app/drizzle.config.ts ./drizzle.config.ts
 
 EXPOSE 5000
 
