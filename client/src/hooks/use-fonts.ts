@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertFavorite, type InsertCollectionItem } from "@shared/routes";
+import { type InsertFavorite, type InsertCollectionItem } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 // GET /api/fonts
 export function useFonts(filters?: {
@@ -10,9 +11,8 @@ export function useFonts(filters?: {
   sort?: string;
 }) {
   return useQuery({
-    queryKey: [api.fonts.list.path, filters],
+    queryKey: ["/api/fonts", filters],
     queryFn: async () => {
-      const url = buildUrl(api.fonts.list.path);
       const params = new URLSearchParams();
       if (filters?.q) params.append("q", filters.q);
       if (filters?.categoryId) params.append("categoryId", filters.categoryId);
@@ -20,9 +20,9 @@ export function useFonts(filters?: {
       if (filters?.favorites) params.append("favorites", filters.favorites);
       if (filters?.sort) params.append("sort", filters.sort);
       
-      const res = await fetch(`${url}?${params.toString()}`, { credentials: "include" });
+      const res = await fetch(`/api/fonts?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch fonts");
-      return api.fonts.list.responses[200].parse(await res.json());
+      return res.json();
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -31,14 +31,12 @@ export function useFonts(filters?: {
 // GET /api/fonts/:family
 export function useFont(family: string) {
   return useQuery({
-    queryKey: [api.fonts.get.path, family],
+    queryKey: ["/api/fonts", family],
     queryFn: async () => {
-      // family can contain spaces, need to encode
-      const url = buildUrl(api.fonts.get.path, { family: encodeURIComponent(family) });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(`/api/fonts/${encodeURIComponent(family)}`);
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch font details");
-      return api.fonts.get.responses[200].parse(await res.json());
+      return res.json();
     },
     enabled: !!family,
   });
@@ -49,16 +47,12 @@ export function useRescanFonts() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const res = await fetch(api.fonts.rescan.path, {
-        method: api.fonts.rescan.method,
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to rescan fonts");
-      return api.fonts.rescan.responses[200].parse(await res.json());
+      const res = await apiRequest("POST", "/api/rescan");
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.fonts.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.categories.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fonts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
     },
   });
 }
@@ -68,19 +62,13 @@ export function useToggleFavorite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: InsertFavorite) => {
-      const res = await fetch(api.favorites.toggle.path, {
-        method: api.favorites.toggle.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to toggle favorite");
-      return api.favorites.toggle.responses[200].parse(await res.json());
+      const res = await apiRequest("POST", "/api/favorites/toggle", data);
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.fonts.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.favorites.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.fonts.get.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fonts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fonts"] });
     },
   });
 }

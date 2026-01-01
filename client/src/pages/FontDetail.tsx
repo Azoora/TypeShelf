@@ -1,4 +1,4 @@
-import { useFont } from "@/hooks/use-fonts";
+import { useFont, useToggleFavorite } from "@/hooks/use-fonts";
 import { Sidebar } from "@/components/Sidebar";
 import { Link, useRoute } from "wouter";
 import { ArrowLeft, Heart, Download, Info, Type, Code, Share2, Plus, Globe, Settings, Database, Moon, Sun } from "lucide-react";
@@ -7,7 +7,6 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useToggleFavorite } from "@/hooks/use-fonts";
 import { useCollections, useAddFontToCollection } from "@/hooks/use-collections";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -26,8 +25,8 @@ export default function FontDetail() {
 
   const handleToggleFavorite = () => {
     toggleFavorite({ targetType: "family", targetId: familyName }, {
-      onSuccess: (data) => {
-        toast({ title: data.isFavorite ? "Added to favorites" : "Removed from favorites" });
+      onSuccess: () => {
+        toast({ title: "Updated favorites" });
       }
     });
   };
@@ -94,8 +93,8 @@ export default function FontDetail() {
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleToggleFavorite}>
-              <Heart className="w-4 h-4 mr-2" />
-              Favorite
+              <Heart className={cn("w-4 h-4 mr-2", font.isFavorite && "fill-current")} />
+              {font.isFavorite ? "Favorited" : "Favorite"}
             </Button>
             
             <DropdownMenu>

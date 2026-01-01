@@ -1,15 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertCollection, type InsertCollectionItem } from "@shared/schema";
+import { type Collection, type InsertCollection, type InsertCollectionItem } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 // GET /api/collections
 export function useCollections() {
-  return useQuery({
-    queryKey: [api.collections.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.collections.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch collections");
-      return api.collections.list.responses[200].parse(await res.json());
-    },
+  return useQuery<(Collection & { count: number })[]>({
+    queryKey: ["/api/collections"],
   });
 }
 
@@ -17,17 +13,13 @@ export function useCollections() {
 export function useCreateCollection() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: InsertCollection) => {
-      const res = await fetch(api.collections.create.path, {
-        method: api.collections.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to create collection");
-      return api.collections.create.responses[201].parse(await res.json());
+    mutationFn: async (collection: InsertCollection) => {
+      const res = await apiRequest("POST", "/api/collections", collection);
+      return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.collections.list.path] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+    },
   });
 }
 
@@ -36,53 +28,39 @@ export function useDeleteCollection() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const url = buildUrl(api.collections.delete.path, { id });
-      const res = await fetch(url, { method: api.collections.delete.method, credentials: "include" });
-      if (!res.ok) throw new Error("Failed to delete collection");
+      await apiRequest("DELETE", `/api/collections/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.collections.list.path] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+    },
   });
 }
 
-// POST /api/collections/:id/items (Add font to collection)
+// POST /api/collections/:id/fonts
 export function useAddFontToCollection() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ collectionId, ...data }: InsertCollectionItem) => {
-      const url = buildUrl(api.collections.addFont.path, { id: collectionId });
-      const res = await fetch(url, {
-        method: api.collections.addFont.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to add font to collection");
-      return api.collections.addFont.responses[201].parse(await res.json());
+    mutationFn: async (data: InsertCollectionItem) => {
+      const res = await apiRequest("POST", `/api/collections/${data.collectionId}/fonts`, data);
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.collections.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.fonts.get.path] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fonts", { collectionId: variables.collectionId }] });
     },
   });
 }
 
-// DELETE /api/collections/:id/items (Remove font)
+// DELETE /api/collections/:id/fonts/:targetId
 export function useRemoveFontFromCollection() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ collectionId, targetId, targetType }: { collectionId: string, targetId: string, targetType: string }) => {
-      const url = buildUrl(api.collections.removeFont.path, { id: collectionId });
-      const res = await fetch(url, {
-        method: api.collections.removeFont.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId, targetType }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to remove font from collection");
+    mutationFn: async (data: { collectionId: string, targetType: string, targetId: string }) => {
+      await apiRequest("DELETE", `/api/collections/${data.collectionId}/fonts/${encodeURIComponent(data.targetId)}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.collections.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.fonts.get.path] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/collections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fonts", { collectionId: variables.collectionId }] });
     },
   });
 }
