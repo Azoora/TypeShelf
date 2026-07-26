@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { scanner } from "./scanner";
 import { z } from "zod";
+import * as path from "path";
 import * as chokidar from "chokidar";
 import * as fs from "fs";
 import { seed } from "./seed";
@@ -113,6 +114,31 @@ export async function registerRoutes(
   app.post("/api/rescan", async (req, res) => {
     scanner.scanAll(); 
     res.json({ message: "Scan started" });
+  });
+
+  // === Directory Browser ===
+  app.get("/api/browse", async (req, res) => {
+    const defaultPath = path.join(process.env.HOME || "/home/umbrel", "umbrel/home");
+    const dirPath = (req.query.path as string) || defaultPath;
+    const resolved = path.resolve(dirPath);
+
+    if (!fs.existsSync(resolved)) {
+      return res.status(400).json({ message: "Path does not exist" });
+    }
+
+    try {
+      const entries = fs.readdirSync(resolved, { withFileTypes: true });
+      const directories = entries
+        .filter(e => e.isDirectory())
+        .map(e => ({ name: e.name, path: path.join(resolved, e.name) }));
+      res.json({
+        entries: directories,
+        currentPath: resolved,
+        parentPath: path.dirname(resolved),
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   // === Static Serving ===

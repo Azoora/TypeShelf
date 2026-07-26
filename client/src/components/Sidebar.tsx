@@ -8,14 +8,19 @@ import {
   Plus, 
   Settings as SettingsIcon,
   Library,
-  Trash2
+  Trash2,
+  ChevronRight,
+  ArrowUp,
+  Folder
 } from "lucide-react";
 import { useCollections, useCreateCollection, useDeleteCollection } from "@/hooks/use-collections";
 import { useCategories, useCreateCategory, useDeleteCategory } from "@/hooks/use-categories";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export function Sidebar() {
@@ -239,7 +244,7 @@ function CreateCategoryDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>
         <button className="text-muted-foreground hover:text-primary transition-colors">
           <Plus className="w-4 h-4" />
@@ -256,22 +261,133 @@ function CreateCategoryDialog() {
               value={name} 
               onChange={(e) => setName(e.target.value)} 
             />
-            <Input 
-              placeholder="System Path (e.g. /usr/share/fonts)" 
-              value={path} 
-              onChange={(e) => setPath(e.target.value)} 
-            />
-            <p className="text-xs text-muted-foreground">
-              Provide the absolute path to a directory containing font files.
-            </p>
+            <DirectoryPicker value={path} onChange={setPath} />
           </div>
           <div className="flex justify-end">
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending || !path.trim()}>
               {isPending ? "Adding..." : "Add Folder"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DirectoryPicker({ value, onChange }: { value: string; onChange: (path: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const defaultHome = "/home/umbrel/umbrel/home";
+  const [browsePath, setBrowsePath] = useState(value || defaultHome);
+  const [entries, setEntries] = useState<{ name: string; path: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchDir = useCallback(async (dirPath: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/browse?path=${encodeURIComponent(dirPath)}`);
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.message || "Failed to browse");
+      }
+      const data = await res.json();
+      setEntries(data.entries);
+      setBrowsePath(data.currentPath);
+    } catch (e: any) {
+      setError(e.message);
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleOpen = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen) {
+      fetchDir(value || defaultHome);
+    }
+  };
+
+  const handleSelect = (dirPath: string) => {
+    onChange(dirPath);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpen}>
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-1 h-10 px-3 rounded-lg border border-input bg-transparent text-sm text-muted-foreground truncate">
+            {value ? (
+              <>
+                <Folder className="w-4 h-4 shrink-0 mr-1" />
+                <span className="truncate">{value}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground/60">No folder selected</span>
+            )}
+          </div>
+        </div>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="shrink-0 h-10">
+            Browse
+          </Button>
+        </PopoverTrigger>
+      </div>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="p-3 border-b border-border">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+            <Folder className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{browsePath}</span>
+          </div>
+        </div>
+        {error && (
+          <div className="px-3 py-2 text-xs text-destructive">{error}</div>
+        )}
+        <ScrollArea className="h-64">
+          <div className="p-1">
+            {browsePath !== "/" && (
+              <button
+                type="button"
+                onClick={() => fetchDir(browsePath.replace(/\/[^/]+$/, "") || "/")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-secondary transition-colors text-muted-foreground"
+              >
+                <ArrowUp className="w-4 h-4" />
+                <span>..</span>
+              </button>
+            )}
+            {loading ? (
+              <div className="px-2 py-4 text-xs text-muted-foreground text-center">Loading...</div>
+            ) : entries.length === 0 ? (
+              <div className="px-2 py-4 text-xs text-muted-foreground text-center">Empty directory</div>
+            ) : (
+              entries.map((entry) => (
+                <button
+                  key={entry.path}
+                  type="button"
+                  onClick={() => fetchDir(entry.path)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-secondary transition-colors"
+                >
+                  <Folder className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="truncate flex-1 text-left">{entry.name}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                </button>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+        <div className="p-2 border-t border-border flex justify-between items-center">
+          <span className="text-xs text-muted-foreground truncate max-w-[180px]">{browsePath}</span>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => handleSelect(browsePath)}
+          >
+            Select
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
